@@ -1,6 +1,9 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, Boolean, Integer, Foreignkey, Table, Column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from eralchemy2 import render_er
+
+# Una Tabla User -> para registrar usuarios
 
 db = SQLAlchemy()
 
