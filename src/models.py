@@ -1,6 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Integer, ForeignKey, Table, Colum
-from sqlalchemy.orm import Mapped, mapped_colum, relationship
+from sqlalchemy import String, Integer, ForeignKey, Table, Column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from eralchemy2 import render_er
 
 
@@ -39,6 +39,7 @@ class Post(db.Model):
     # Relaciones
     user: Mapped['User'] = relationship('User', back_populates='posts')
     comments: Mapped[list['Comment']] = relationship('Comment', back_populates='post')
+    linking_users: Mapped[list['User']] = relationship('User', secondary=likes, back_populates='liked_posts')
 
 # Modelo Comment
 class Comment(db.Model):
@@ -47,4 +48,6 @@ class Comment(db.Model):
     user_id: Mapped[str] = mapped_column(Integer, ForeignKey('user.id'), nullable=False)
     post_id: Mapped[str] = mapped_column(Integer, ForeignKey('post.id'), nullable=False)
     # Relaciones
+    user: Mapped['User'] = relationship('User', back_populates='comments')
+    post: Mapped['Post'] = relationship('Post', back_populates='comments')
 
