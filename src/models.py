@@ -1,82 +1,50 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean, Integer, ForeignKey, Table, Column
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, Integer, ForeignKey, Table, Colum
+from sqlalchemy.orm import Mapped, mapped_colum, relationship
+from eralchemy2 import render_er
 
+
+# Una tabla user -> Para registrar usuarios. 
+# Una tabla post -> Para almacenar las publicaciones del user. -> Relación Uno a Muchos.
+# Una tabla comment -> Para almacenar los comentarios de los user. -> Relación Uno a Muchos.
+# Una tabla likes -> Para guardar los likes de los post.  -> Relación Muchos a Muchos. 
+
+# Inicializar Flask-SQLAlchemy
 db = SQLAlchemy()
 
+# Tabla intermedia para la relación de muchos a muchos (likes)
+likes = Table('likes', db.Model.metadata,
+            Column('user_id', Integer, ForeignKey('user.id'), primary_key=True),
+            Column('post_id', Integer, ForeignKey('post.id'), primary_key=True)
+            )
+
+# Modelo User
 class User(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
-
+    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    # Relaciones
+    posts: Mapped[list['Post']] = relationship('Post', back_populates='user')
+    comments: Mapped[list['Comment']] = relationship('Comment', back_populates='user')
+    liked_posts: Mapped[list['Post']] = relationship('Post', secondary=likes, back_populates='linking_users')
 
     def serialize(self):
-        return {
-            "id": self.id,
-            "email": self.email,
-            "is_active" : self.is_active
-            # do not serialize the password, its a security breach
-        }
+        return {"id": self.id, "username": self.username}
 
 
-# Relacion uno a uno
-class Persona(db.Model):
+# Modelo Post
+class Post(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
-    nombre: Mapped[str] = mapped_column(String(80), nullable=False)
-    pasaporte_id: Mapped[int] = mapped_column(Integer, ForeignKey('pasaporte.id'), unique=True)
-    pasaporte: relationship('Pasaporte', back_populates='persona', uselist=False)
+    caption: Mapped[str] = mapped_column(String(250), nullable=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('user.id'), nullable=False)
+    # Relaciones
+    user: Mapped['User'] = relationship('User', back_populates='posts')
+    comments: Mapped[list['Comment']] = relationship('Comment', back_populates='post')
 
-
-class Pasaporte(db.Model):
+# Modelo Comment
+class Comment(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
-    numero: Mapped[str] = mapped_column(String(20))
+    text: Mapped[str] = mapped_column(String(250), nullable=False)
+    user_id: Mapped[str] = mapped_column(Integer, ForeignKey('user.id'), nullable=False)
+    post_id: Mapped[str] = mapped_column(Integer, ForeignKey('post.id'), nullable=False)
+    # Relaciones
 
-
-
-
-#### app ####
-
-persona = Persona(nombre="Carlos")
-pasaporte = Pasaporte(numero='ABC123')
-
-persona.pasaporte = pasaporte
-
-db.session.add(persona)
-db.session.commit()
-print(persona.pasaporte.numer) # ABC123
-print(pasaporte.persona.nombre) # Carlos
-
-# Relacion uno a muchos
-
-class Autor(db.Model):
-    id: Mapped[int] = mapped_column(primary_key=True)
-    nombre: Mapped[str] = mapped_column(String(80))
-    # Relacion
-    libros: relationship('Libro', back_populates='autor')
-
-
-
-class Libro(db.Model):
-    id: Mapped[int] = mapped_column(primary_key=True)
-    titulo: Mapped[str] = mapped_column(String(120))
-    autor_id: Mapped[int] = mapped_column(Integer, ForeignKey('autor.id'))
-    
-
-# Relacion muchos a muchos
-
-# Tabla intermedia
-inscripciones = Table('inscripciones',
-        Column("estudiante_id", Integer, ForeignKey('estudiante.id'), primary_key=True),
-        Column('curso_id', Integer, ForeignKey('curso.id'), primary_key=True)
-)
-
-class Estudiante(db.Model):
-    id: Mapped[int] = mapped_column(primary_key=True)
-    nombre: Mapped[str] = mapped_column(String(80))
-    cursos: relationship('Curso', sencondary=inscripciones, back_populates='estudiantes')
-
-
-class Curso(db.Model):
-    id: Mapped[int] = mapped_column(primary_key=True)
-    nombre: Mapped[str] = mapped_column(String(80))
